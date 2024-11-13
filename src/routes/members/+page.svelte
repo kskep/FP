@@ -395,7 +395,7 @@
                           variant="outline"
                           size="icon"
                           class="h-6 w-6"
-                          on:click={() => quickAdjustDKP(member, 10)}
+                          on:click={() => quickAdjustDKP(member, 1)}
                         >
                           <Plus class="h-4 w-4" />
                         </Button>
@@ -403,7 +403,7 @@
                           variant="outline"
                           size="icon"
                           class="h-6 w-6"
-                          on:click={() => quickAdjustDKP(member, -10)}
+                          on:click={() => quickAdjustDKP(member, -1)}
                         >
                           <Minus class="h-4 w-4" />
                         </Button>

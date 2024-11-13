@@ -17,9 +17,17 @@
         DialogTitle,
         DialogFooter,
     } from "$lib/components/ui/dialog";
+    import { writable } from "svelte/store";
+    import { onMount } from "svelte";
+    import { browser } from "$app/environment";
+
 
     /** @type {import('./$types').PageData} */
     export let data;
+
+    const isOfficer = writable(false);
+    let showPasswordDialog = false;
+    let password = "";
 
     let showCreateDialog = false;
     let newRaid = {
@@ -69,6 +77,29 @@
         alert('Error deleting raid: ' + err.message);
     }
 }
+nMount(() => {
+        if (browser) {
+            $isOfficer = sessionStorage.getItem("isOfficer") === "true";
+        }
+    });
+
+    async function checkPassword() {
+        const response = await fetch("/api/check-password", {
+            method: "POST",
+            body: JSON.stringify({ password }),
+            headers: {
+                "content-type": "application/json",
+            },
+        });
+
+        if (response.ok) {
+            $isOfficer = true;
+            showPasswordDialog = false;
+            sessionStorage.setItem("isOfficer", "true");
+        } else {
+            alert("Incorrect password");
+        }
+    }
 
 </script>
 
@@ -77,9 +108,31 @@
         <CardHeader>
             <div class="flex justify-between items-center">
                 <CardTitle>Raid History</CardTitle>
-                <Button on:click={() => showCreateDialog = true}>
-                    Add Raid Rewards
-                </Button>
+                <div class="flex gap-2">
+                    {#if $isOfficer}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            on:click={() => {
+                                $isOfficer = false;
+                                sessionStorage.removeItem("isOfficer");
+                            }}
+                        >
+                            Exit Officer Mode
+                        </Button>
+                        <Button on:click={() => showCreateDialog = true}>
+                            Add Raid Rewards
+                        </Button>
+                    {:else}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            on:click={() => (showPasswordDialog = true)}
+                        >
+                            Officer Login
+                        </Button>
+                    {/if}
+                </div>
             </div>
         </CardHeader>
     </Card>
@@ -115,13 +168,17 @@
                                 <TableCell>{raid.dkpReward}</TableCell>
                                 <TableCell>{raid.dkpReward * raid.participants.length}</TableCell>
                                 <TableCell>
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        on:click={() => deleteRaid(raid)}
-                                    >
-                                        Delete Raid
-                                    </Button>
+                                    <TableCell>
+                                        {#if $isOfficer}
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                on:click={() => deleteRaid(raid)}
+                                            >
+                                                Delete Raid
+                                            </Button>
+                                        {/if}
+                                    </TableCell>
                                 </TableCell>
                             </TableRow>
                         {/each}
@@ -253,6 +310,33 @@
             >
                 Create and Award DKP
             </Button>
+        </DialogFooter>
+    </DialogContent>
+</Dialog>
+
+<Dialog bind:open={showPasswordDialog}>
+    <DialogContent class="max-w-md">
+        <DialogHeader>
+            <DialogTitle>Officer Login</DialogTitle>
+        </DialogHeader>
+
+        <div class="grid gap-4 py-4">
+            <div class="space-y-2">
+                <Label for="password">Password</Label>
+                <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter officer password"
+                    bind:value={password}
+                />
+            </div>
+        </div>
+
+        <DialogFooter>
+            <Button variant="outline" on:click={() => (showPasswordDialog = false)}>
+                Cancel
+            </Button>
+            <Button on:click={checkPassword}>Login</Button>
         </DialogFooter>
     </DialogContent>
 </Dialog>

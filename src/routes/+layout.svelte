@@ -10,6 +10,10 @@
         Calendar,
         Settings,
         Menu,
+        Shell,
+
+        Shell
+
     } from 'lucide-svelte';
 
     let isOpen = true; // For mobile toggle
@@ -29,6 +33,11 @@
             name: 'Wishlist',
             href: '/wishlist',
             icon: ListTodo,
+        },
+        {
+            name: 'Raids',
+            href: '/raids',
+            icon: Shell,
         },
 
     ];
