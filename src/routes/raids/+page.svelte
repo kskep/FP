@@ -77,7 +77,7 @@
         alert('Error deleting raid: ' + err.message);
     }
 }
-nMount(() => {
+onMount(() => {
         if (browser) {
             $isOfficer = sessionStorage.getItem("isOfficer") === "true";
         }

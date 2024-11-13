@@ -12,7 +12,7 @@
         Menu,
         Shell,
 
-        Shell
+
 
     } from 'lucide-svelte';
 
