@@ -36,6 +36,7 @@
         participants: []
     };
 
+
     async function createRaid() {
         try {
             const response = await fetch('/api/raids', {
@@ -254,22 +255,22 @@ onMount(() => {
                 </div>
                 <div class="h-48 overflow-y-auto border rounded p-2 space-y-2">
                     {#each data.members as member}
-                        <label class="flex items-center space-x-2 p-1 hover:bg-gray-100 rounded">
+                        <label class="flex items-center space-x-2 p-1 hover:bg-muted rounded">
                             <input
                                 type="checkbox"
-                                class="rounded border-gray-300"
+                                class="rounded border-input"
                                 bind:group={newRaid.participants}
                                 value={member._id}
                             />
                             <span>{member.name}</span>
-                            <span class="text-sm text-gray-500">({member.rank})</span>
+                            <span class="text-sm text-muted-foreground">({member.rank})</span>
                         </label>
                     {/each}
                 </div>
             </div>
 
-            <div class="bg-gray-50 -mx-6 px-6 py-2 mt-2">
-                <div class="text-sm text-gray-500">
+            <div class="bg-muted/50 -mx-6 px-6 py-2 mt-2">
+                <div class="text-sm text-muted-foreground">
                     Selected: {newRaid.participants.length} members
                     {#if newRaid.participants.length > 0 && newRaid.dkpReward}
                         • Total DKP to distribute: {newRaid.dkpReward * newRaid.participants.length}
@@ -280,7 +281,7 @@ onMount(() => {
                         {#each newRaid.participants as participantId}
                             {@const member = data.members.find(m => m._id === participantId)}
                             {#if member}
-                                <span class="text-xs bg-gray-100 px-2 py-1 rounded-full">
+                                <span class="text-xs bg-muted px-2 py-1 rounded-full">
                                     {member.name}
                                 </span>
                             {/if}
