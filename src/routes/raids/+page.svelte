@@ -21,13 +21,14 @@
     import { onMount } from "svelte";
     import { browser } from "$app/environment";
 
-
     /** @type {import('./$types').PageData} */
     export let data;
 
     const isOfficer = writable(false);
     let showPasswordDialog = false;
     let password = "";
+    let isCreating = false;
+    let isDeleting = false;
 
     let showCreateDialog = false;
     let newRaid = {
@@ -36,49 +37,68 @@
         participants: []
     };
 
-
     async function createRaid() {
-        try {
-            const response = await fetch('/api/raids', {
-                method: 'POST',
-                body: JSON.stringify(newRaid),
-                headers: {
-                    'content-type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                showCreateDialog = false;
-                window.location.reload();
-            }
-        } catch (err) {
-            console.error('Error creating raid:', err);
-        }
-    }
-
-    async function deleteRaid(raid) {
-    if (!confirm(`Are you sure you want to delete raid "${raid.name}"? This will deduct ${raid.dkpReward} DKP from all participants.`)) {
-        return;
-    }
-
+    if (isCreating) return;
+    isCreating = true;
     try {
-        const response = await fetch(`/api/raids/${raid._id}`, {
-            method: 'DELETE'
+        // Add distributed: true to the request
+        const raidData = {
+            ...newRaid,
+            distributed: true // Add this line
+        };
+
+        const response = await fetch('/api/raids', {
+            method: 'POST',
+            body: JSON.stringify(raidData),
+            headers: {
+                'content-type': 'application/json'
+            }
         });
 
         if (response.ok) {
+            showCreateDialog = false;
             window.location.reload();
         } else {
             const error = await response.json();
-            console.error('Failed to delete raid:', error);
-            alert('Failed to delete raid: ' + (error.error || 'Unknown error'));
+            alert('Failed to create raid: ' + (error.error || 'Unknown error'));
         }
     } catch (err) {
-        console.error('Error deleting raid:', err);
-        alert('Error deleting raid: ' + err.message);
+        console.error('Error creating raid:', err);
+        alert('Error creating raid: ' + err.message);
+    } finally {
+        isCreating = false;
     }
 }
-onMount(() => {
+
+
+    async function deleteRaid(raid) {
+        if (isDeleting) return;
+        if (!confirm(`Are you sure you want to delete raid "${raid.name}"? This will deduct ${raid.dkpReward} DKP from all participants.`)) {
+            return;
+        }
+
+        isDeleting = true;
+        try {
+            const response = await fetch(`/api/raids/${raid._id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                const error = await response.json();
+                console.error('Failed to delete raid:', error);
+                alert('Failed to delete raid: ' + (error.error || 'Unknown error'));
+            }
+        } catch (err) {
+            console.error('Error deleting raid:', err);
+            alert('Error deleting raid: ' + err.message);
+        } finally {
+            isDeleting = false;
+        }
+    }
+
+    onMount(() => {
         if (browser) {
             $isOfficer = sessionStorage.getItem("isOfficer") === "true";
         }
@@ -101,7 +121,6 @@ onMount(() => {
             alert("Incorrect password");
         }
     }
-
 </script>
 
 <div class="container mx-auto p-4 space-y-4">
@@ -149,6 +168,7 @@ onMount(() => {
                             <TableHead>Participants</TableHead>
                             <TableHead>DKP Awarded</TableHead>
                             <TableHead>Total DKP</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead>Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -160,7 +180,7 @@ onMount(() => {
                                 <TableCell>
                                     <div class="flex flex-wrap gap-1">
                                         {#each raid.participants as participant}
-                                            <span class="px-2 py-1 text-xs bg-gray-100 rounded-full">
+                                            <span class="px-2 py-1 text-xs bg-secondary rounded-full">
                                                 {participant.name}
                                             </span>
                                         {/each}
@@ -169,17 +189,26 @@ onMount(() => {
                                 <TableCell>{raid.dkpReward}</TableCell>
                                 <TableCell>{raid.dkpReward * raid.participants.length}</TableCell>
                                 <TableCell>
-                                    <TableCell>
-                                        {#if $isOfficer}
+                                    <span class="px-2 py-1 rounded-full text-xs
+                                        {raid.distributed
+                                            ? 'bg-green-500/10 text-green-500 dark:bg-green-500/20'
+                                            : 'bg-yellow-500/10 text-yellow-500 dark:bg-yellow-500/20'}">
+                                        {raid.distributed ? 'Distributed' : 'Pending'}
+                                    </span>
+                                </TableCell>
+                                <TableCell>
+                                    {#if $isOfficer}
+                                        <div class="flex gap-2">
                                             <Button
                                                 variant="destructive"
                                                 size="sm"
+                                                disabled={isDeleting}
                                                 on:click={() => deleteRaid(raid)}
                                             >
-                                                Delete Raid
+                                                {isDeleting ? 'Deleting...' : 'Delete'}
                                             </Button>
-                                        {/if}
-                                    </TableCell>
+                                        </div>
+                                    {/if}
                                 </TableCell>
                             </TableRow>
                         {/each}
@@ -189,7 +218,6 @@ onMount(() => {
         </CardContent>
     </Card>
 </div>
-
 <Dialog bind:open={showCreateDialog}>
     <DialogContent class="max-w-2xl">
         <DialogHeader>
@@ -206,13 +234,13 @@ onMount(() => {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                class="flex items-center gap-2"
+                                class="flex items-center gap-2 bg-background hover:bg-secondary/50"
                                 on:click={() => {
                                     newRaid.participants = raid.participants.map(p => p._id);
                                 }}
                             >
                                 <span>{raid.name}</span>
-                                <span class="text-xs text-gray-500">
+                                <span class="text-xs text-muted-foreground">
                                     ({raid.participants.length} members)
                                 </span>
                             </Button>
@@ -253,12 +281,12 @@ onMount(() => {
                         </Button>
                     {/if}
                 </div>
-                <div class="h-48 overflow-y-auto border rounded p-2 space-y-2">
+                <div class="h-48 overflow-y-auto border rounded p-2 space-y-2 bg-background">
                     {#each data.members as member}
-                        <label class="flex items-center space-x-2 p-1 hover:bg-muted rounded">
+                        <label class="flex items-center space-x-2 p-1 hover:bg-secondary/50 rounded">
                             <input
                                 type="checkbox"
-                                class="rounded border-input"
+                                class="rounded border-input bg-background"
                                 bind:group={newRaid.participants}
                                 value={member._id}
                             />
@@ -269,7 +297,7 @@ onMount(() => {
                 </div>
             </div>
 
-            <div class="bg-muted/50 -mx-6 px-6 py-2 mt-2">
+            <div class="bg-secondary/20 -mx-6 px-6 py-2 mt-2">
                 <div class="text-sm text-muted-foreground">
                     Selected: {newRaid.participants.length} members
                     {#if newRaid.participants.length > 0 && newRaid.dkpReward}
@@ -281,7 +309,7 @@ onMount(() => {
                         {#each newRaid.participants as participantId}
                             {@const member = data.members.find(m => m._id === participantId)}
                             {#if member}
-                                <span class="text-xs bg-muted px-2 py-1 rounded-full">
+                                <span class="text-xs bg-secondary px-2 py-1 rounded-full">
                                     {member.name}
                                 </span>
                             {/if}
@@ -307,9 +335,9 @@ onMount(() => {
             </Button>
             <Button
                 on:click={createRaid}
-                disabled={!newRaid.name || !newRaid.dkpReward || newRaid.participants.length === 0}
+                disabled={!newRaid.name || !newRaid.dkpReward || newRaid.participants.length === 0 || isCreating}
             >
-                Create and Award DKP
+                {isCreating ? 'Creating...' : 'Create and Award DKP'}
             </Button>
         </DialogFooter>
     </DialogContent>

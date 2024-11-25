@@ -29,7 +29,7 @@
   import { writable } from "svelte/store";
   import { browser } from "$app/environment";
   import { onMount } from "svelte";
-  import { Plus, Minus, History } from 'lucide-svelte';
+  import { Plus, Minus, History } from "lucide-svelte";
   /** @type {import('./$types').PageData} */
   export let data;
 
@@ -42,8 +42,6 @@
       $isOfficer = sessionStorage.getItem("isOfficer") === "true";
     }
   });
-
-
 
   let newMember = {
     name: "",
@@ -250,25 +248,25 @@
   }
 
   async function checkPassword() {
-        const response = await fetch("/api/check-password", {
-            method: "POST",
-            body: JSON.stringify({ password }),
-            headers: {
-                "content-type": "application/json",
-            },
-        });
+    const response = await fetch("/api/check-password", {
+      method: "POST",
+      body: JSON.stringify({ password }),
+      headers: {
+        "content-type": "application/json",
+      },
+    });
 
-        if (response.ok) {
-            $isOfficer = true;
-            showPasswordDialog = false;
-            if (browser) {
-                sessionStorage.setItem("isOfficer", "true");
-            }
-            window.location.reload();
-        } else {
-            alert("Incorrect password");
-        }
+    if (response.ok) {
+      $isOfficer = true;
+      showPasswordDialog = false;
+      if (browser) {
+        sessionStorage.setItem("isOfficer", "true");
+      }
+      window.location.reload();
+    } else {
+      alert("Incorrect password");
     }
+  }
 </script>
 
 <div class="container mx-auto p-4 space-y-4">
@@ -350,26 +348,26 @@
         <Button on:click={addMember} class="hover-gradient">Add Member</Button>
       </CardFooter>
     </Card>
-    {/if}
+  {/if}
 
-    <!-- Members Table Card -->
-    <Card>
-      <CardContent>
-        <div class="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Rank</TableHead>
-                <TableHead>DKP</TableHead>
-                {#if $isOfficer}
-                  <TableHead>History</TableHead>
-                  <TableHead class="text-right">Actions</TableHead>
-                {/if}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {#each data.members || [] as member}
+  <!-- Members Table Card -->
+  <Card>
+    <CardContent>
+      <div class="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Rank</TableHead>
+              <TableHead>DKP</TableHead>
+              {#if $isOfficer}
+                <TableHead>History</TableHead>
+                <TableHead class="text-right">Actions</TableHead>
+              {/if}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {#each data.members || [] as member}
               <TableRow>
                 <TableCell class="font-medium">{member.name}</TableCell>
                 <TableCell>
@@ -388,37 +386,39 @@
                 </TableCell>
                 <TableCell>
                   <div class="flex items-center gap-2">
-                    <span>{member.dkp || 0}</span>
-                    {#if $isOfficer}
-                      <div class="flex gap-1">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          class="h-6 w-6"
-                          on:click={() => quickAdjustDKP(member, 1)}
-                        >
-                          <Plus class="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          class="h-6 w-6"
-                          on:click={() => quickAdjustDKP(member, -1)}
-                        >
-                          <Minus class="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          class="h-6 w-6"
-                          on:click={() => openDkpDialog(member)}
-                        >
-                          <History class="h-4 w-4" />
-                        </Button>
-                      </div>
-                    {/if}
+                      <span>{member.calculatedDKP || 0}</span>
+
+                      {#if $isOfficer}
+                          <div class="flex gap-1">
+                              <Button
+                                  variant="outline"
+                                  size="icon"
+                                  class="h-6 w-6"
+                                  on:click={() => quickAdjustDKP(member, 1)}
+                              >
+                                  <Plus class="h-4 w-4" />
+                              </Button>
+                              <Button
+                                  variant="outline"
+                                  size="icon"
+                                  class="h-6 w-6"
+                                  on:click={() => quickAdjustDKP(member, -1)}
+                              >
+                                  <Minus class="h-4 w-4" />
+                              </Button>
+                              <Button
+                                  variant="outline"
+                                  size="icon"
+                                  class="h-6 w-6"
+                                  on:click={() => openDkpDialog(member)}
+                              >
+                                  <History class="h-4 w-4" />
+                              </Button>
+                          </div>
+                      {/if}
                   </div>
-                </TableCell>
+              </TableCell>
+
                 <TableCell>
                   <div class="flex items-center gap-2">
                     <span class="text-sm text-muted-foreground">
@@ -449,7 +449,9 @@
                         View All
                       </Button>
                     {:else}
-                      <span class="text-xs text-muted-foreground">No history</span>
+                      <span class="text-xs text-muted-foreground"
+                        >No history</span
+                      >
                     {/if}
                   </div>
                 </TableCell>
@@ -465,13 +467,13 @@
                   </TableCell>
                 {/if}
               </TableRow>
-              {/each}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
-  </div>
+            {/each}
+          </TableBody>
+        </Table>
+      </div>
+    </CardContent>
+  </Card>
+</div>
 
 <Dialog bind:open={showPasswordDialog}>
   <DialogContent class="max-w-md">
@@ -608,40 +610,39 @@
     </DialogHeader>
 
     {#if selectedMemberHistory}
-      <div class="overflow-y-auto max-h-[60vh] p-4">
-        {#if data.transactionsByMember[selectedMemberHistory._id]?.length}
-          <div class="space-y-4">
-            {#each data.transactionsByMember[selectedMemberHistory._id] as transaction}
-              <div
-                class="flex items-center justify-between p-3 rounded-lg border border-border {transaction.amount >
-                0
-                  ? 'bg-green-500/10'
-                  : 'bg-red-500/10'}"
-              >
-                <div class="space-y-1">
-                  <div class="font-medium">
-                    {transaction.reason}
-                  </div>
-                  <div class="text-sm text-muted-foreground">
-                    {formatDate(transaction.date)}
-                  </div>
-                </div>
-                <div
-                  class="text-lg font-mono tabular-nums {transaction.amount > 0
-                    ? 'text-green-400'
-                    : 'text-red-400'}"
-                >
-                  {transaction.amount > 0 ? "+" : ""}{transaction.amount}
-                </div>
+  <div class="overflow-y-auto max-h-[60vh] p-4">
+    {#if data.transactionsByMember[selectedMemberHistory._id]?.length}
+      <div class="space-y-4">
+        {#each data.transactionsByMember[selectedMemberHistory._id] as transaction}
+          <div
+            class="flex items-center justify-between p-3 rounded-lg border border-border {transaction.amount > 0
+              ? 'bg-green-500/10'
+              : 'bg-red-500/10'}"
+          >
+            <div class="space-y-1">
+              <div class="font-medium">
+                {transaction.reason}
               </div>
-            {/each}
+              <div class="text-sm text-muted-foreground">
+                {formatDate(transaction.date || transaction._createdAt)}
+              </div>
+            </div>
+            <div
+              class="text-lg font-mono tabular-nums {transaction.amount > 0
+                ? 'text-green-400'
+                : 'text-red-400'}"
+            >
+              {transaction.amount > 0 ? "+" : ""}{transaction.amount}
+            </div>
           </div>
-        {:else}
-          <div class="text-center text-muted-foreground py-8">
-            No DKP history found for this member
-          </div>
-        {/if}
+        {/each}
       </div>
+    {:else}
+      <div class="text-center text-muted-foreground py-8">
+        No DKP history found for this member
+      </div>
+    {/if}
+  </div>
       <DialogFooter class="mt-4">
         <div class="w-full flex justify-between items-center">
           <div class="text-sm text-muted-foreground">

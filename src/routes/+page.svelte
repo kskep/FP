@@ -106,7 +106,9 @@
                       {member.rank}
                     </span>
                   </TableCell>
-                  <TableCell class="text-right font-mono">{member.dkp || 0}</TableCell>
+                  <TableCell class="text-right font-mono">
+                    {member.dkp || 0}
+                </TableCell>
                 </TableRow>
               {/each}
             </TableBody>
@@ -161,7 +163,7 @@
                         </TableCell>
                         <TableCell>
                           <span class="font-mono">{member.dkp || 0}</span>
-                        </TableCell>
+                      </TableCell>
                         <TableCell>
                           <span class="px-2 py-1 rounded-full text-xs
                             {item.status === 'Claimed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">

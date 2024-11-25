@@ -29,10 +29,7 @@ export async function DELETE({ params }) {
                 // Create negative DKP transaction
                 await client.create({
                     _type: 'dkpTransaction',
-                    member: {
-                        _type: 'reference',
-                        _ref: participant._id
-                    },
+                    memberId: participant._id,
                     amount: -raid.dkpReward,
                     reason: `Raid Deleted: ${raid.name}`,
                     date: new Date().toISOString()

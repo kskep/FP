@@ -1,77 +1,89 @@
+// /api/raids/[id]/distribute/+server.js
 import { client } from '$lib/sanity';
 import { json } from '@sveltejs/kit';
 
-export async function DELETE({ params }) {
+export async function POST({ params }) {
     try {
-        // Get raid details before deletion
+        const raidId = params.id;
+
+        // Fetch the raid details with validation that it hasn't been distributed yet
         const raid = await client.fetch(`
             *[_type == "raid" && _id == $raidId][0] {
                 _id,
                 name,
                 dkpReward,
+                distributed,
                 participants[]->{
                     _id,
-                    name,
-                    dkp
+                    name
                 }
             }
-        `, { raidId: params.id });
+        `, { raidId });
 
         if (!raid) {
-            throw new Error('Raid not found');
+            return new Response(JSON.stringify({
+                error: 'Raid not found'
+            }), {
+                status: 404,
+                headers: { 'Content-Type': 'application/json' }
+            });
         }
 
-        console.log('Deleting raid:', raid);
-
-        // Deduct DKP from each participant
-        for (const participant of raid.participants) {
-            try {
-                // Create negative DKP transaction
-                await client.create({
-                    _type: 'dkpTransaction',
-                    member: {
-                        _type: 'reference',
-                        _ref: participant._id
-                    },
-                    amount: -raid.dkpReward,
-                    reason: `Raid Deleted: ${raid.name}`,
-                    date: new Date().toISOString()
-                });
-
-                // Update member's DKP
-                await client
-                    .patch(participant._id)
-                    .set({
-                        dkp: (participant.dkp || 0) - raid.dkpReward
-                    })
-                    .commit();
-
-                console.log(`Deducted DKP from ${participant.name}`);
-            } catch (err) {
-                console.error(`Error processing participant ${participant._id}:`, err);
-                throw err;
-            }
+        if (raid.distributed) {
+            return new Response(JSON.stringify({
+                error: 'DKP has already been distributed for this raid'
+            }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' }
+            });
         }
 
-        // Delete the raid document
-        await client.delete(params.id);
-        console.log('Raid deleted successfully');
+        console.log('Processing raid:', raid);
+
+        // Create DKP transactions for each participant
+        const transactions = await Promise.all(
+            raid.participants.map(async (participant) => {
+                try {
+                    // Create transaction with consistent structure
+                    const transaction = await client.create({
+                        _type: 'dkpTransaction',
+                        member: {
+                            _type: 'reference',
+                            _ref: participant._id
+                        },
+                        amount: raid.dkpReward,
+                        reason: `Raid: ${raid.name}`,
+                        date: new Date().toISOString()
+                    });
+
+                    console.log(`Created transaction for ${participant.name}:`, transaction);
+                    return transaction;
+                } catch (err) {
+                    console.error(`Error creating transaction for ${participant.name}:`, err);
+                    throw err;
+                }
+            })
+        );
+
+        // Mark raid as distributed
+        await client
+            .patch(raidId)
+            .set({ distributed: true })
+            .commit();
 
         return json({
             success: true,
-            message: `Raid deleted and DKP deducted from ${raid.participants.length} members`
+            message: `DKP awarded to ${raid.participants.length} members`,
+            transactions
         });
 
     } catch (err) {
-        console.error('Error deleting raid:', err);
+        console.error('Error distributing raid rewards:', err);
         return new Response(JSON.stringify({
-            error: err.message || 'Error deleting raid',
-            details: err
+            error: err.message || 'Error distributing raid rewards'
         }), {
             status: 500,
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            headers: { 'Content-Type': 'application/json' }
         });
     }
 }

@@ -9,6 +9,7 @@ export async function load() {
                     name,
                     date,
                     dkpReward,
+                    distributed,
                     participants[]->{
                         _id,
                         name,
